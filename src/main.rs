@@ -1,7 +1,7 @@
 use std::{env, time};
 
 use bitcoincore_rpc::{json, jsonrpc::{self}, Auth, Client, RpcApi};
-use chrono::Duration;
+use chrono::{DateTime, Duration, TimeDelta};
 #[macro_use]
 extern crate lazy_static;
 
@@ -24,14 +24,31 @@ fn time_to_mine(block_height: u64) -> Duration {
     // when the lazy macro is expanded
     // if a value has a static lifetime then it means that value lives as long as the program lives
     let rpc_client: &Client = &*RPC_CLIENT;
-    rpc_client.get_block_hash(234);
-    todo!()
+    //rpc_client.get_block_hash(234);
+    // Get block at target block height 
+    let block_hash = rpc_client.get_block_hash(block_height).unwrap(); 
+    let block = rpc_client.get_block_info(&block_hash).unwrap(); 
+    // Get block before the target block_height 
+    let previous_block_hash = rpc_client.get_block_hash(block_height-1).unwrap(); 
+    let previous_block = rpc_client.get_block_info(&previous_block_hash).unwrap();
+
+    let block_time = DateTime::from_timestamp(block.time as i64, 0 ).unwrap(); 
+    let previous_block_time = DateTime::from_timestamp(previous_block.time as i64, 0).unwrap(); 
+
+    let time_difference = block_time - previous_block_time; 
+    
+    // Return the time difference as TimeDelta
+    time_difference 
 }
 
 // TODO: Task 2
 fn number_of_transactions(block_height: u64) -> u16 {
-    let some_value = Box::new(4 as u32);
-    todo!()
+    //let some_value = Box::new(4 as u32);
+    //todo!()
+    let rpc_client: &Client = &*RPC_CLIENT;
+    let block_hash = rpc_client.get_block_hash(block_height).unwrap();
+    let block = rpc_client.get_block_info(&block_hash).unwrap();
+    block.tx.len() as u16
 }
 
 fn main() {
@@ -57,4 +74,9 @@ fn main() {
     let res: json::GetTxOutSetInfoResult =
         rpc_client.get_tx_out_set_info(None, None, None).unwrap();
     println!("{:?}", res);
+
+    // Test the implemented functions
+    let block_height = 379400; // Example block height
+    println!("Time to mine block {}: {:?}", block_height, time_to_mine(block_height));
+    println!("Number of transactions in block {}: {}", block_height, number_of_transactions(block_height));
 }
